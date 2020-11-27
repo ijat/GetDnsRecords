@@ -20,7 +20,7 @@ namespace GetDnsRecords
             IEnumerable<string> readLines = File.ReadLines(args[0]);
 
             File.AppendAllText($"output.csv", 
-                "domain,domain-ttl,ns,ns-ttl,soa,soa-ttl,mx,mx-priority,mx-ttl,txt,txt-ttl\n");
+                "domain,domain-ttl,ns,ns-ttl,soa,soa-ttl,mx,mx-priority,mx-ttl,txt,txt-ttl,dkim,dkim-ttl,dmarc,dmarc-ttl\n");
             
             foreach (string host in readLines)
             {
@@ -50,20 +50,26 @@ namespace GetDnsRecords
                     IDnsQueryResponse mxResponse = client.Query(host, QueryType.MX);
                     IDnsQueryResponse soaResponse = client.Query(host, QueryType.SOA);
                     IDnsQueryResponse txtResponse = client.Query(host, QueryType.TXT);
-                
+                    
+                    // 
+                    IDnsQueryResponse ucResponse = client.Query("uckey._domainkey." + host, QueryType.TXT);
+                    IDnsQueryResponse dmResponse = client.Query("_dmarc." + host, QueryType.TXT);
+
                     //
                     string doa = ParseRecord(aResponse, isA: true);
                     string soa = ParseRecord(soaResponse);
                     string mxs = ParseRecord(mxResponse, isMx: true);
                     string nss = ParseRecord(nsResponse);
                     string txts = ParseRecord(txtResponse);
+                    string ucs = ParseRecord(ucResponse);
+                    string dmr = ParseRecord(dmResponse);
 
                     // string result = $"{host} | {soa}NS\n{nss}MX\n{mxs}TXT\n{txts}\n";
-                    result = $"{host},{doa},{nss},{soa},{mxs},{txts}\n";
+                    result = $"{host},{doa},{nss},{soa},{mxs},{txts},{ucs},{dmr}\n";
                 }
                 catch (Exception e)
                 {
-                    result = $"{host},No record,No record,No record,No record,No record,No record,No record,No record,No record,No record\n";
+                    result = $"{host},No record,No record,No record,No record,No record,No record,No record,No record,No record,No record,No record,No record\n";
                 }
                 
                 File.AppendAllText($"output.csv", result);
